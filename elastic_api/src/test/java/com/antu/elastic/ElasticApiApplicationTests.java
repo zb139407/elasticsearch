@@ -1,7 +1,10 @@
 package com.antu.elastic;
 
 import com.alibaba.fastjson.JSON;
+import com.antu.elastic.mapper.BdcqzsDao;
+import com.antu.elastic.pojo.Bdcqzs;
 import com.antu.elastic.pojo.User;
+import org.beetl.sql.core.SQLReady;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
@@ -24,18 +27,23 @@ import org.elasticsearch.client.indices.GetIndexRequest;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.query.MatchAllQueryBuilder;
+import org.elasticsearch.index.query.MatchQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.query.TermQueryBuilder;
 import org.elasticsearch.search.SearchHit;
+import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.fetch.subphase.FetchSourceContext;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
+import javax.sql.DataSource;
 import java.io.IOException;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -46,6 +54,18 @@ class ElasticApiApplicationTests {
 
     @Autowired
     private RestHighLevelClient restHighLevelClient;
+
+    @Autowired
+    private BdcqzsDao bdcqzsDao;
+
+    @Autowired
+    private DataSource dataSource;
+
+    @Test
+    public void test() throws SQLException {
+        System.out.println(dataSource.getClass());
+        System.out.println(dataSource.getConnection());
+    }
 
     // 测试索引的创建 Request
     @Test
@@ -69,7 +89,7 @@ class ElasticApiApplicationTests {
     // 测试删除索引
     @Test
     void testDeleteIndex() throws IOException {
-        DeleteIndexRequest deleteIndexRequest = new DeleteIndexRequest("antu_index");
+        DeleteIndexRequest deleteIndexRequest = new DeleteIndexRequest("jd_goods");
         AcknowledgedResponse delete = restHighLevelClient.indices().delete(deleteIndexRequest, RequestOptions.DEFAULT);
         System.out.println(delete.isAcknowledged());
     }
@@ -139,21 +159,76 @@ class ElasticApiApplicationTests {
         BulkRequest bulkRequest = new BulkRequest();
         bulkRequest.timeout("10s");
         List<User> userList = new ArrayList<>();
-        userList.add(new User("tom1", 3));
-        userList.add(new User("tom2", 3));
-        userList.add(new User("tom3", 3));
-        userList.add(new User("tom4", 3));
+        userList.add(new User("tom5", 3));
+        userList.add(new User("tom6", 3));
+        userList.add(new User("tom7", 3));
+        userList.add(new User("tom8", 3));
         // 批量处理请求
         for (int i = 0; i < userList.size(); i++) {
             bulkRequest.add(
                     new IndexRequest("antu_index")
-                            .id("" + (i + 1))
                             .source(JSON.toJSONString(userList.get(i)), XContentType.JSON)
             );
         }
         BulkResponse bulkResponse = restHighLevelClient.bulk(bulkRequest, RequestOptions.DEFAULT);
         System.out.println(bulkResponse.hasFailures());
     }
+
+    @Test
+    void testInsertBdcqzs() throws IOException {
+        String countSql = "select count(1) from bdcqzs where djsj is not null";
+        int count = bdcqzsDao.getSQLManager().execute(new SQLReady(countSql), Integer.class).get(0);
+        int start = 0;
+        while (start <= count) {
+            String sql = "select * from (select rownum as num, t.* from netobdc.bdcqzs t where djsj is not null and rownum <= " + (start + 10000) + ") temp where temp.num > " + start;
+            List<Map> list = bdcqzsDao.getSQLManager().execute(new SQLReady(sql), Map.class);
+            // 批量处理请求
+            BulkRequest bulkRequest = new BulkRequest();
+            bulkRequest.timeout("100s");
+            for (Map map : list) {
+                map.remove("num");
+                bulkRequest.add(
+                        new IndexRequest("netobdc_bdcqzs")
+                                .source(JSON.toJSONString(map), XContentType.JSON)
+                );
+            }
+            BulkResponse bulkResponse = restHighLevelClient.bulk(bulkRequest, RequestOptions.DEFAULT);
+            System.out.println((start + 10000) + "：" + bulkResponse.hasFailures());
+            start += 10000;
+        }
+    }
+
+    @Test
+    void testInsertXsFdcq2() throws IOException {
+        String countSql = "select count(1) from bdcinfo.xs_fdcq2 where djsj is not null";
+        int count = bdcqzsDao.getSQLManager().execute(new SQLReady(countSql), Integer.class).get(0);
+        System.out.println(count);
+        int start = 0;
+        while (start <= count) {
+            String sql = "select * from (select rownum as num, t.* from bdcinfo.xs_fdcq2 t where djsj is not null and rownum <= " + (start + 10000) + ") temp where temp.num > " + start;
+            List<Map> list = bdcqzsDao.getSQLManager().execute(new SQLReady(sql), Map.class);
+            BulkRequest bulkRequest = new BulkRequest();
+            bulkRequest.timeout("100s");
+            for (Map map : list) {
+                map.remove("num");
+                bulkRequest.add(
+                        new IndexRequest("bdcinfo_xs_fdcq2")
+                                .source(JSON.toJSONString(map), XContentType.JSON)
+                );
+            }
+            BulkResponse bulkResponse = restHighLevelClient.bulk(bulkRequest, RequestOptions.DEFAULT);
+            System.out.println((start + 10000) + "：" + bulkResponse.hasFailures());
+            start += 10000;
+        }
+    }
+
+    @Test
+    void testSize() {
+        String sql = "select *count(1) from bdcqzs where djsj is not null";
+        int count = bdcqzsDao.getSQLManager().execute(new SQLReady(sql), Integer.class).get(0);
+        System.out.println(count);
+    }
+
 
     // 批量更新
 
@@ -167,14 +242,15 @@ class ElasticApiApplicationTests {
     // MatchAllQueryBuilder 匹配全部
     @Test
     void testSearch() throws IOException {
-        SearchRequest searchRequest = new SearchRequest("antu_index");
+        SearchRequest searchRequest = new SearchRequest("antu_test");
         // 构建搜索条件
         SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
         // 查询条件 可以使用QueryBuilders工具类实现
         // QueryBuilders.termQuery 精确匹配
         // QueryBuilders.matchAllQuery 匹配所有
-        TermQueryBuilder termQueryBuilder = QueryBuilders.termQuery("name", "tom1");
+        TermQueryBuilder termQueryBuilder = QueryBuilders.termQuery("bdcdyh", "320");
 //        MatchAllQueryBuilder matchAllQueryBuilder = QueryBuilders.matchAllQuery();
+//        MatchQueryBuilder matchQueryBuilder = QueryBuilders.matchQuery("iid", "201706050000046");
         searchSourceBuilder.query(termQueryBuilder);
         searchSourceBuilder.timeout(new TimeValue(60, TimeUnit.SECONDS));
         searchRequest.source(searchSourceBuilder);
@@ -184,5 +260,15 @@ class ElasticApiApplicationTests {
         for (SearchHit documentFields : searchResponse.getHits().getHits()) {
             System.out.println(documentFields.getSourceAsMap());
         }
+    }
+
+    /**
+     * 搜索全部记录
+     *
+     * @throws: IOException
+     */
+    @Test
+    void testSearchAll() throws IOException {
+
     }
 }

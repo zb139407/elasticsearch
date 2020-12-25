@@ -40,10 +40,10 @@ public class ContentService {
         // 把查询的数据放入es中
         BulkRequest bulkRequest = new BulkRequest();
         bulkRequest.timeout("2m");
-        for (int i = 0; i < contentList.size(); i++) {
+        for (Content content : contentList) {
             bulkRequest.add(
                     new IndexRequest("jd_goods")
-                            .source(JSON.toJSONString(contentList.get(i)), XContentType.JSON)
+                            .source(JSON.toJSONString(content), XContentType.JSON)
             );
         }
         BulkResponse bulk = restHighLevelClient.bulk(bulkRequest, RequestOptions.DEFAULT);

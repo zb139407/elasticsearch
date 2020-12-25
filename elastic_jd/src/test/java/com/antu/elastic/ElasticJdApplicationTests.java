@@ -8,6 +8,7 @@ class ElasticJdApplicationTests {
 
     @Test
     void contextLoads() {
+
     }
 
 }
