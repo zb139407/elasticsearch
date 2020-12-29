@@ -200,19 +200,19 @@ class ElasticApiApplicationTests {
 
     @Test
     void testInsertXsFdcq2() throws IOException {
-        String countSql = "select count(1) from bdcinfo.xs_fdcq2 where djsj is not null";
+        String countSql = "select count(1) from netobdc.bdcqzm where djsj is not null";
         int count = bdcqzsDao.getSQLManager().execute(new SQLReady(countSql), Integer.class).get(0);
         System.out.println(count);
         int start = 0;
         while (start <= count) {
-            String sql = "select * from (select rownum as num, t.* from bdcinfo.xs_fdcq2 t where djsj is not null and rownum <= " + (start + 10000) + ") temp where temp.num > " + start;
+            String sql = "select * from (select rownum as num, t.* from netobdc.bdcqzm t where djsj is not null and rownum <= " + (start + 10000) + ") temp where temp.num > " + start;
             List<Map> list = bdcqzsDao.getSQLManager().execute(new SQLReady(sql), Map.class);
             BulkRequest bulkRequest = new BulkRequest();
             bulkRequest.timeout("100s");
             for (Map map : list) {
                 map.remove("num");
                 bulkRequest.add(
-                        new IndexRequest("bdcinfo_xs_fdcq2")
+                        new IndexRequest("netobdc_bdcqzm")
                                 .source(JSON.toJSONString(map), XContentType.JSON)
                 );
             }
