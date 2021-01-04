@@ -39,9 +39,6 @@ public class ElasticRepositoryTest {
     private BdcqzsRepository bdcqzsRepository;
 
     @Autowired
-    private ElasticsearchRestTemplate elasticsearchRestTemplate;
-
-    @Autowired
     private RestHighLevelClient restHighLevelClient;
 
     @Autowired

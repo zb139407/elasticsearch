@@ -26,10 +26,7 @@ import org.elasticsearch.client.indices.CreateIndexResponse;
 import org.elasticsearch.client.indices.GetIndexRequest;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.common.xcontent.XContentType;
-import org.elasticsearch.index.query.MatchAllQueryBuilder;
-import org.elasticsearch.index.query.MatchQueryBuilder;
-import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.index.query.TermQueryBuilder;
+import org.elasticsearch.index.query.*;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
@@ -42,6 +39,7 @@ import javax.sql.DataSource;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -159,19 +157,77 @@ class ElasticApiApplicationTests {
         BulkRequest bulkRequest = new BulkRequest();
         bulkRequest.timeout("10s");
         List<User> userList = new ArrayList<>();
-        userList.add(new User("tom5", 3));
-        userList.add(new User("tom6", 3));
-        userList.add(new User("tom7", 3));
-        userList.add(new User("tom8", 3));
+        userList.add(new User("tom1", 2));
+        userList.add(new User("tom2", 4));
+        userList.add(new User("tom3", 5));
+        userList.add(new User("tom4", 7));
+        Map map = new HashMap();
+        map.put("qlrmc", "张三");
         // 批量处理请求
-        for (int i = 0; i < userList.size(); i++) {
+        for (User user : userList) {
             bulkRequest.add(
                     new IndexRequest("antu_index")
-                            .source(JSON.toJSONString(userList.get(i)), XContentType.JSON)
+                            .source(JSON.toJSONString(user), XContentType.JSON)
             );
         }
         BulkResponse bulkResponse = restHighLevelClient.bulk(bulkRequest, RequestOptions.DEFAULT);
         System.out.println(bulkResponse.hasFailures());
+    }
+
+    @Test
+    void testSave() throws IOException {
+        BulkRequest bulkRequest = new BulkRequest();
+        bulkRequest.timeout("10s");
+        Map<String, Object> map = new HashMap<>();
+        map.put("qlrmc", "test");
+        bulkRequest.add(
+                new IndexRequest("antu_index")
+                        .source(JSON.toJSONString(map), XContentType.JSON)
+        );
+        BulkResponse bulkResponse = restHighLevelClient.bulk(bulkRequest, RequestOptions.DEFAULT);
+        System.out.println(bulkResponse.hasFailures());
+    }
+
+    @Test
+    void testLength() {
+
+    }
+
+    @Test
+    void get() throws IOException {
+        // 搜索请求对象
+        SearchRequest searchRequest = new SearchRequest("netobdc_bdcqzs");
+
+        // 搜索源构建对象
+        SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
+
+        // 布尔查询
+        BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery();
+
+        System.out.println("房屋结构".length());
+        // 定义匹配查询
+        boolQueryBuilder.must(QueryBuilders.matchQuery("qlqtqk", "房屋结构"));
+//        boolQueryBuilder.must(QueryBuilders.matchPhraseQuery("qlrmc", "张口"));
+
+        // 搜索方式 布尔查询
+        searchSourceBuilder.query(boolQueryBuilder);
+
+        // 向搜索请求对象中添加搜索源
+        searchRequest.source(searchSourceBuilder);
+        // 执行搜索，向es发出http请求
+        SearchResponse searchResponse = restHighLevelClient.search(searchRequest, RequestOptions.DEFAULT);
+        // 获取搜索结果
+        SearchHits hits = searchResponse.getHits();
+        // 得到匹配度高的文档
+        SearchHit[] searchHits = hits.getHits();
+        List<Map<String, Object>> list = new ArrayList<>();
+        for (SearchHit hit : searchHits) {
+            Map<String, Object> map = hit.getSourceAsMap();
+            list.add(map);
+        }
+
+        System.out.println(list.size());
+        System.out.println(list);
     }
 
     @Test
@@ -242,24 +298,26 @@ class ElasticApiApplicationTests {
     // MatchAllQueryBuilder 匹配全部
     @Test
     void testSearch() throws IOException {
-        SearchRequest searchRequest = new SearchRequest("antu_test");
+        SearchRequest searchRequest = new SearchRequest("netobdc_bdcqzs");
         // 构建搜索条件
         SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
         // 查询条件 可以使用QueryBuilders工具类实现
         // QueryBuilders.termQuery 精确匹配
         // QueryBuilders.matchAllQuery 匹配所有
-        TermQueryBuilder termQueryBuilder = QueryBuilders.termQuery("bdcdyh", "320");
+        MatchPhraseQueryBuilder spanTermQueryBuilder = QueryBuilders.matchPhraseQuery("qlrmc", "夏娜");
+//        QueryBuilders.terms
 //        MatchAllQueryBuilder matchAllQueryBuilder = QueryBuilders.matchAllQuery();
 //        MatchQueryBuilder matchQueryBuilder = QueryBuilders.matchQuery("iid", "201706050000046");
-        searchSourceBuilder.query(termQueryBuilder);
+        searchSourceBuilder.query(spanTermQueryBuilder);
         searchSourceBuilder.timeout(new TimeValue(60, TimeUnit.SECONDS));
         searchRequest.source(searchSourceBuilder);
         SearchResponse searchResponse = restHighLevelClient.search(searchRequest, RequestOptions.DEFAULT);
         System.out.println(JSON.toJSONString(searchResponse.getHits()));
         System.out.println("====================================");
-        for (SearchHit documentFields : searchResponse.getHits().getHits()) {
+        System.out.println(searchResponse.getHits().getHits().length);
+/*        for (SearchHit documentFields : searchResponse.getHits().getHits()) {
             System.out.println(documentFields.getSourceAsMap());
-        }
+        }*/
     }
 
     /**

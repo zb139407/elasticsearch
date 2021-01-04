@@ -9,30 +9,28 @@ import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
-import org.junit.jupiter.api.Test;
+import org.elasticsearch.search.sort.SortOrder;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.stereotype.Service;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 
-@SpringBootTest
-class ElasticJdApplicationTests {
+/**
+ * @author: zhangBin 1394078687@qq.com
+ * @description: TODO
+ * @date: 2020/12/30 11:09
+ */
+@Service
+public class ElasticUtil {
     @Autowired
     private RestHighLevelClient restHighLevelClient;
 
-    @Test
-    void page() throws IOException {
+    public Long getTotalHits(String indices) throws IOException {
         // 搜索请求对象
-        SearchRequest searchRequest = new SearchRequest("netobdc_bdcqzs");
-
-        // 搜索源构建对象
-        SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
-                .trackTotalHits(true)
-                .from(20000)
-                .size(50);
+        SearchRequest searchRequest = new SearchRequest(indices);
+        // 搜索源构建对象  允许命中所有  根据id倒排序
+        SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder().trackTotalHits(true);
         // 全匹配
         MatchAllQueryBuilder matchAllQueryBuilder = QueryBuilders.matchAllQuery();
         // 搜索方式
@@ -43,14 +41,7 @@ class ElasticJdApplicationTests {
         SearchResponse searchResponse = restHighLevelClient.search(searchRequest, RequestOptions.DEFAULT);
         // 获取搜索结果
         SearchHits hits = searchResponse.getHits();
-        SearchHit[] searchHits = hits.getHits();
-        List<Map<String, Object>> list = new ArrayList<>();
-        for (SearchHit hit : searchHits) {
-            Map<String, Object> map = hit.getSourceAsMap();
-            list.add(map);
-        }
-        System.out.println(list);
+        // 如果存在记录，则返回当前最大id
+        return hits.getTotalHits().value;
     }
-
-
 }

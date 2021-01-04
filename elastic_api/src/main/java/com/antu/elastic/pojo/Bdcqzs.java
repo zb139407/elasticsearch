@@ -2,6 +2,7 @@ package com.antu.elastic.pojo;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
+import org.springframework.data.annotation.Id;
 import org.springframework.data.elasticsearch.annotations.DateFormat;
 import org.springframework.data.elasticsearch.annotations.Document;
 import org.springframework.data.elasticsearch.annotations.Field;
@@ -18,9 +19,11 @@ import java.util.Date;
 @Document(indexName = "netobdc_bdcqzs", type = "_doc", replicas = 0)
 public class Bdcqzs {
     /**
-     * ID
+     * id
      */
-    private Integer id;
+    @Id
+    @Field(type = FieldType.Long)
+    private Long id;
 
     /**
      * 标识码
@@ -74,7 +77,7 @@ public class Bdcqzs {
     /**
      * 不动产权证号
      */
-    @Field(type = FieldType.Text)
+    @Field(type = FieldType.Text, analyzer = "ik_max_word", searchAnalyzer = "ik_smart")
     private String bdcqzh;
 
     /**
@@ -110,7 +113,7 @@ public class Bdcqzs {
     /**
      * 坐落
      */
-    @Field(type = FieldType.Text)
+    @Field(type = FieldType.Text, analyzer = "ik_max_word", searchAnalyzer = "ik_smart")
     private String zl;
 
     /**
@@ -128,19 +131,19 @@ public class Bdcqzs {
     /**
      * 权利类型
      */
-    @Field(type = FieldType.Text)
+    @Field(type = FieldType.Text, analyzer = "ik_max_word", searchAnalyzer = "ik_smart")
     private String qllx;
 
     /**
      * 权利性质
      */
-    @Field(type = FieldType.Text)
+    @Field(type = FieldType.Text, analyzer = "ik_max_word", searchAnalyzer = "ik_smart")
     private String qlxz;
 
     /**
      * 用途
      */
-    @Field(type = FieldType.Text)
+    @Field(type = FieldType.Text, analyzer = "ik_max_word", searchAnalyzer = "ik_smart")
     private String yt;
 
     /**
@@ -248,7 +251,6 @@ public class Bdcqzs {
      * 权利人叠加
      */
     @Field(type = FieldType.Text, analyzer = "ik_max_word", searchAnalyzer = "ik_smart")
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
     private String allqlr;
 
     /**
@@ -260,14 +262,12 @@ public class Bdcqzs {
     /**
      * 宗地图
      */
-    @Field(type = FieldType.Keyword)
-    private byte[] zdt;
+//    private byte[] zdt;
 
     /**
      * 房产图
      */
-    @Field(type = FieldType.Keyword)
-    private byte[] fct;
+//    private byte[] fct;
 
     /**
      * 宗地代码
@@ -338,8 +338,8 @@ public class Bdcqzs {
     /**
      * 证书二维码
      */
-    @Field(type = FieldType.Keyword)
-    private String zsewm;
+/*    @Field(type = FieldType.Keyword)
+    private String zsewm;*/
 
     /**
      * 是否已经打印
@@ -393,14 +393,14 @@ public class Bdcqzs {
     /**
      * 分层分户图二维码内容
      */
-    @Field(type = FieldType.Keyword)
-    private String qrfcfht;
+/*    @Field(type = FieldType.Keyword)
+    private String qrfcfht;*/
 
     /**
      * 宗地图二维码内容
      */
-    @Field(type = FieldType.Keyword)
-    private String qrzdt;
+/*    @Field(type = FieldType.Keyword)
+    private String qrzdt;*/
 
     /**
      * 电子证照统一编号

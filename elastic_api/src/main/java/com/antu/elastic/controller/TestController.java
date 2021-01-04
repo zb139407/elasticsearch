@@ -1,8 +1,13 @@
 package com.antu.elastic.controller;
 
 import com.alibaba.fastjson.JSON;
+import com.antu.elastic.ElasticUtil;
 import com.antu.elastic.mapper.BdcqzsDao;
+import com.antu.elastic.mapper.XsFdcq2Dao;
 import com.antu.elastic.pojo.Bdcqzs;
+import com.antu.elastic.pojo.XsFdcq2;
+import com.antu.elastic.repository.BdcqzsRepository;
+import com.antu.elastic.repository.XsFdcq2Repository;
 import org.beetl.sql.core.SQLReady;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
@@ -21,10 +26,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * @author: zhangBin 1394078687@qq.com
@@ -338,5 +340,55 @@ public class TestController {
             System.out.println(start + "：" + bulkResponse.hasFailures());
             start += 10000;
         }
+    }
+
+    @Autowired
+    private BdcqzsRepository bdcqzsRepository;
+
+    @PostMapping("/search/hits")
+    public String getHits() throws IOException {
+        // 搜索请求对象
+        SearchRequest searchRequest = new SearchRequest("netobdc_bdcqzs");
+        // 搜索源构建对象
+        SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder().trackTotalHits(true);
+        MatchAllQueryBuilder matchAllQueryBuilder = QueryBuilders.matchAllQuery();
+        // 搜索方式 布尔查询
+        searchSourceBuilder.query(matchAllQueryBuilder);
+        // 向搜索请求对象中添加搜索源
+        searchRequest.source(searchSourceBuilder);
+        // 执行搜索，向es发出http请求
+        SearchResponse searchResponse = restHighLevelClient.search(searchRequest, RequestOptions.DEFAULT);
+        // 获取搜索结果
+        SearchHits hits = searchResponse.getHits();
+        long value = hits.getTotalHits().value;
+        return String.valueOf(value);
+    }
+
+    @Autowired
+    private XsFdcq2Dao xsFdcq2Dao;
+
+    @Autowired
+    private ElasticUtil elasticUtil;
+
+    @Autowired
+    private XsFdcq2Repository xsFdcq2Repository;
+
+    @PostMapping("/save/all")
+    public String saveAll() throws IOException {
+        /*String countSql = "select count(1) from bdcinfo.xs_fdcq2 where djsj is not null";
+        int count = xsFdcq2Dao.getSQLManager().execute(new SQLReady(countSql), Integer.class).get(0);*/
+        int start = 0;
+        while (start <= 3000) {
+            Long totalHits = elasticUtil.getTotalHits("bdcinfo_xs_fdcq2");
+            String sql = "select * from (select rownum as num, t.* from bdcinfo.xs_fdcq2 t where djsj is not null and rownum <= " + (start + 1000) + ") temp where temp.num > " + start;
+            List<XsFdcq2> list = xsFdcq2Dao.getSQLManager().execute(new SQLReady(sql), XsFdcq2.class);
+            for (int i = 0; i < list.size(); i++) {
+                list.get(i).setId(totalHits + i);
+            }
+            xsFdcq2Repository.saveAll(list);
+            System.out.println((start + 1000));
+            start += 1000;
+        }
+        return "ok";
     }
 }
