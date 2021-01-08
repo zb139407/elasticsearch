@@ -65,12 +65,10 @@ class ElasticApiApplicationTests {
         System.out.println(dataSource.getConnection());
     }
 
-    // 测试索引的创建 Request
     @Test
     void testCreateIndex() throws IOException {
         // 1、创建索引请求
-        // CreateIndexRequest createIndexRequest = new CreateIndexRequest("antu_index");
-        CreateIndexRequest createIndexRequest = new CreateIndexRequest("jd_goods");
+        CreateIndexRequest createIndexRequest = new CreateIndexRequest("test");
         // 2、客户端执行请求IndicesClient，请求后获得响应
         CreateIndexResponse createIndexResponse = restHighLevelClient.indices().create(createIndexRequest, RequestOptions.DEFAULT);
         System.out.println(createIndexResponse);
@@ -98,23 +96,23 @@ class ElasticApiApplicationTests {
         // 创建对象
         User user = new User("tom", 12);
         // 创建请求
-        IndexRequest indexRequest = new IndexRequest("antu_index");
+        IndexRequest indexRequest = new IndexRequest("test");
         // 规则 PUT /antu_index/_doc/1
         indexRequest.id("1");
         indexRequest.timeout(TimeValue.timeValueSeconds(1));
-//        indexRequest.timeout("1s");
         // 将数据放入请求 JSON
         indexRequest.source(JSON.toJSONString(user), XContentType.JSON);
         // 客户端发送请求,获取响应结果
         IndexResponse indexResponse = restHighLevelClient.index(indexRequest, RequestOptions.DEFAULT);
         System.out.println(indexResponse.toString());
-        System.out.println(indexResponse.status()); // 对应命令返回的状态 CREATED
+        // 对应命令返回的状态 CREATED
+        System.out.println(indexResponse.status());
     }
 
     // 测试获取文档
     @Test
     void testExistDocument() throws IOException {
-        GetRequest getRequest = new GetRequest("antu_index", "1");
+        GetRequest getRequest = new GetRequest("test", "1");
         // 不获取返回的_source上下文
         getRequest.fetchSourceContext(new FetchSourceContext(false));
         getRequest.storedFields("_none_");
@@ -127,8 +125,10 @@ class ElasticApiApplicationTests {
     void testGetDocument() throws IOException {
         GetRequest getRequest = new GetRequest("antu_index", "1");
         GetResponse getResponse = restHighLevelClient.get(getRequest, RequestOptions.DEFAULT);
-        System.out.println(getResponse.getSourceAsString()); // 打印文档内容
-        System.out.println(getResponse); // 返回的全部内容和命令一样
+        // 打印文档内容
+        System.out.println(getResponse.getSourceAsString());
+        // 返回的全部内容和命令一样
+        System.out.println(getResponse);
     }
 
     // 测试更新文档信息
@@ -161,12 +161,10 @@ class ElasticApiApplicationTests {
         userList.add(new User("tom2", 4));
         userList.add(new User("tom3", 5));
         userList.add(new User("tom4", 7));
-        Map map = new HashMap();
-        map.put("qlrmc", "张三");
         // 批量处理请求
         for (User user : userList) {
             bulkRequest.add(
-                    new IndexRequest("antu_index")
+                    new IndexRequest("test")
                             .source(JSON.toJSONString(user), XContentType.JSON)
             );
         }
